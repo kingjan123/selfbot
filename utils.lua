@@ -6,16 +6,31 @@ serpent = require "serpent"
 json = (loadfile "./libs/JSON.lua")()
 db = (loadfile "./libs/redis.lua")()
 http.TIMEOUT = 10
-
+function backward_msg_format (msg)
+  for k,name in ipairs({'from', 'to'}) do
+    local longid = msg[name].id
+    msg[name].id = msg[name].peer_id
+    msg[name].peer_id = longid
+    msg[name].type = msg[name].peer_type
+  end
+  if msg.action and (msg.action.user or msg.action.link_issuer) then
+    local user = msg.action.user or msg.action.link_issuer
+    local longid = user.id
+    user.id = user.peer_id
+    user.peer_id = longid
+    user.type = user.peer_type
+  end
+  return msg
+end
 function get_receiver(msg)
   if msg.to.type == 'user' then
     return 'user#id'..msg.from.id
-  end
-  if msg.to.type == 'chat' then
+  elseif msg.to.type == 'chat' then
     return 'chat#id'..msg.to.id
-  end
-  if msg.to.type == 'encr_chat' then
+  elseif msg.to.type == 'encr_chat' then
     return msg.to.print_name
+	else
+	return msg.to.peer_id
   end
 end
 

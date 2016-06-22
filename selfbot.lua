@@ -4,38 +4,6 @@ package.cpath = package.cpath .. ';.luarocks/lib/lua/5.2/?.so'
 dofile("./utils.lua")
 print('Loading utilities.lua...')
 VERSION = '0.1'
-
--- This function is called when tg receive a msg
-function on_msg_receive (msg)
-  if not started then
-    return
-  end
-  local receiver = get_receiver(msg)
-  msg = pre_process_service_msg(msg)
-  if msg_valid(msg) then
-    msg = pre_process_msg(msg)
-    if msg then
-      match_plugins(msg)
-      if not db:get("bot:nomarkread") and not db:hget(receiver,'nomarkread') then
-          mark_read(receiver, ok_cb, false)
-          end
-    end
-  end
-end
-
-function ok_cb(extra, success, result)
-end
-
-function on_binlog_replay_end()
-  started = true
-  postpone (cron_plugins, false, 60*5.0)
-  -- load config
-  _config = load_config()
-  -- load plugins
-  plugins = {}
-  load_plugins()
-end
-
 function msg_valid(msg)
     
   -- Before bot was started
@@ -62,7 +30,6 @@ if db:get("bot:justsudo") and not msg.service and not is_sudo_id(msg.from.id) th
     print('\27[36mNot valid: Msg is not from sudo\27[39m')
     return false
   end
-
   if msg.to.type == 'encr_chat' then
     print('\27[36mNot valid: Encrypted chat\27[39m')
     return false
@@ -74,6 +41,37 @@ if db:get("bot:justsudo") and not msg.service and not is_sudo_id(msg.from.id) th
   end
 
   return true
+end
+-- This function is called when tg receive a msg
+function on_msg_receive (msg)
+  if not started then
+    return
+  end
+  msg = backward_msg_format(msg)
+  local receiver = get_receiver(msg)
+  msg = pre_process_service_msg(msg)
+  if msg_valid(msg) then
+    msg = pre_process_msg(msg)
+    if msg then
+      match_plugins(msg)
+      if not db:get("bot:nomarkread") and not db:hget(receiver,'nomarkread') then
+          mark_read(receiver, ok_cb, false)
+          end
+    end
+  end
+end
+
+function ok_cb(extra, success, result)
+end
+
+function on_binlog_replay_end()
+  started = true
+  postpone (cron_plugins, false, 60*5.0)
+  -- load config
+  _config = load_config()
+  -- load plugins
+  plugins = {}
+  load_plugins()
 end
 
 --
@@ -178,8 +176,9 @@ function load_config( )
   if not f then
     print ("Created new config file: config.lua")
     create_config()
+else
+  f:close()
 end
-    f:close()
   local config = loadfile ("./config.lua")()
   print('Loading config.lua...')
   local stext = ''
@@ -196,8 +195,7 @@ function create_config( )
   -- A simple config with basic plugins and ourselves as privileged user
   config = {
     enabled_plugins = {
-      "settings",
-      "plugin_manager"
+      "poker"
     },
     sudo_users = {},
     disabled_channels = {}

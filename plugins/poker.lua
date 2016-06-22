@@ -1,11 +1,12 @@
 local function run(msg, matches)
-local reply_id = msg['id']
+if not is_sudo_id(msg.from.id) then
 local text = '😐'
-reply_msg(reply_id, text, ok_cb, false)
+reply_msg(msg.id, text, ok_cb, false)
+end
 end
 return {
 patterns = {
-    "😐"
+    "^😐$"
 },
 run = run
 }
