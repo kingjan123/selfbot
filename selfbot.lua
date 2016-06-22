@@ -145,8 +145,6 @@ function match_plugin(plugin, plugin_name, msg)
       end
       -- Function exists
       if plugin.run then
-        -- If plugin is for privileged users only
-        if not warns_user_not_allowed(plugin, msg) then
 		local success, result = pcall(function()
 		return plugin.run(msg, matches)
 		end)
@@ -160,7 +158,6 @@ function match_plugin(plugin, plugin_name, msg)
           if result then
             send_large_msg(receiver, result)
           end
-        end
       end
       -- One patterns matches
       return
