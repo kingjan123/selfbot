@@ -162,6 +162,21 @@ function match_plugin(plugin, plugin_name, msg)
     end
   end
 end
+-- Create a basic config.json file and saves it.
+function create_config(ex,suc,res)
+  -- A simple config with basic plugins and ourselves as privileged user
+  config = {
+    enabled_plugins = {
+      "settings",
+	  "plugin_manager",
+	  "poker"
+    },
+    sudo_users = {res.peer_id},
+    disabled_channels = {}
+  }
+  serialize_to_file(config, './config.lua')
+  print ('saved config into ./config.lua')
+end
 -- Save the content of _config to config.lua
 function save_config( )
   serialize_to_file(_config, './config.lua')
@@ -175,7 +190,7 @@ function load_config( )
   -- If config.lua doesn't exist
   if not f then
     print ("Created new config file: config.lua")
-    create_config()
+    bot_info(create_config,false)
 else
   f:close()
 end
@@ -189,19 +204,6 @@ end
       print("Sudo users: \n" ..stext)
       end
   return config
-end
--- Create a basic config.json file and saves it.
-function create_config( )
-  -- A simple config with basic plugins and ourselves as privileged user
-  config = {
-    enabled_plugins = {
-      "poker"
-    },
-    sudo_users = {},
-    disabled_channels = {}
-  }
-  serialize_to_file(config, './config.lua')
-  print ('saved config into ./config.lua')
 end
 
 function on_our_id (id)
@@ -253,7 +255,6 @@ function cron_plugins()
   postpone (cron_plugins, false, 5*60.0)
 end
 -- Start and load values
-our_id = 0
 now = os.time()
 math.randomseed(now)
 started = false
