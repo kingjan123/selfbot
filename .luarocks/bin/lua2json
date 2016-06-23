@@ -1,3 +1,0 @@
-#!/bin/sh
-
-exec '/usr/bin/lua' -e 'package.path="/home/selfbot/selfbot/.luarocks/share/lua/5.2/?.lua;/home/selfbot/selfbot/.luarocks/share/lua/5.2/?/init.lua;"..package.path; package.cpath="/home/selfbot/selfbot/.luarocks/lib/lua/5.2/?.so;"..package.cpath' -e 'local k,l,_=pcall(require,"luarocks.loader") _=k and l.add_context("lua-cjson","2.1.0-1")' '/home/selfbot/selfbot/.luarocks/lib/luarocks/rocks/lua-cjson/2.1.0-1/bin/lua2json' "$@"
