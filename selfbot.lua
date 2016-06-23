@@ -63,15 +63,45 @@ end
 
 function ok_cb(extra, success, result)
 end
-
+-- Returns the config from config.lua file.
+-- If file doesn't exist, create it.
+function load_config(ex,suc,res)
+  local f = io.open('./config.lua', "r")
+  -- If config.lua doesn't exist
+  if not f then
+    config = {
+    enabled_plugins = {
+      "settings",
+	  "plugin_manager",
+	  "poker"
+    },
+    sudo_users = {res.peer_id},
+    disabled_channels = {}
+  }
+  serialize_to_file(config, './config.lua')
+    print ("Created new config file: config.lua")
+else
+  f:close()
+  end
+    local config = loadfile ("./config.lua")()
+  print('Loading config.lua...')
+  local stext = ''
+  for v,user in pairs(config.sudo_users) do
+      stext = stext..user..'\n'
+  end
+  if not stext ~= '' then
+      print("Sudo users: \n" ..stext)
+      end
+_config = config
+  -- load plugins
+  plugins = {}
+  load_plugins()
+end
 function on_binlog_replay_end()
   started = true
   postpone (cron_plugins, false, 60*5.0)
   -- load config
-  _config = load_config()
-  -- load plugins
-  plugins = {}
-  load_plugins()
+ bot_info(load_config,false)
 end
 
 --
@@ -162,48 +192,10 @@ function match_plugin(plugin, plugin_name, msg)
     end
   end
 end
--- Create a basic config.json file and saves it.
-function create_config(ex,suc,res)
-  -- A simple config with basic plugins and ourselves as privileged user
-  config = {
-    enabled_plugins = {
-      "settings",
-	  "plugin_manager",
-	  "poker"
-    },
-    sudo_users = {res.peer_id},
-    disabled_channels = {}
-  }
-  serialize_to_file(config, './config.lua')
-  print ('saved config into ./config.lua')
-end
 -- Save the content of _config to config.lua
 function save_config( )
   serialize_to_file(_config, './config.lua')
   print ('saved config into ./config.lua')
-end
-
--- Returns the config from config.lua file.
--- If file doesn't exist, create it.
-function load_config( )
-  local f = io.open('./config.lua', "r")
-  -- If config.lua doesn't exist
-  if not f then
-    print ("Created new config file: config.lua")
-    bot_info(create_config,false)
-else
-  f:close()
-end
-  local config = loadfile ("./config.lua")()
-  print('Loading config.lua...')
-  local stext = ''
-  for v,user in pairs(config.sudo_users) do
-      stext = stext..user..'\n'
-  end
-  if not stext ~= '' then
-      print("Sudo users: \n" ..stext)
-      end
-  return config
 end
 
 function on_our_id (id)
