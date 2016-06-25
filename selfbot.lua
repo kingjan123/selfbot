@@ -66,6 +66,7 @@ end
 -- Returns the config from config.lua file.
 -- If file doesn't exist, create it.
 function load_config(ex,suc,res)
+if suc == 1 then
   local f = io.open('./config.lua', "r")
   -- If config.lua doesn't exist
   if not f then
@@ -75,6 +76,9 @@ function load_config(ex,suc,res)
 	  "plugin_manager",
 	  "poker"
     },
+	supported_langs = {
+	'fa'
+	},
     sudo_users = {res.peer_id},
     disabled_channels = {}
   }
@@ -96,11 +100,13 @@ _config = config
   -- load plugins
   plugins = {}
   load_plugins()
-end
-function on_binlog_replay_end()
+  lang = {}
+  load_langs()
   started = true
   postpone (cron_plugins, false, 60*5.0)
-  -- load config
+ end
+end
+function on_binlog_replay_end()
  bot_info(load_config,false)
 end
 
@@ -164,6 +170,51 @@ function match_plugin(plugin, plugin_name, msg)
 
   -- Go over patterns. If one matches it's enough.
   for k, pattern in pairs(plugin.patterns) do
+  if pattern:find('langcmd') then
+  local pattern_2 = pattern:match('langcmd{(.+)}')
+  for l,langu in pairs(_config.supported_langs) do
+  local mypattern = {}
+  local p = 1
+  for get_pattern in pattern_2:gmatch('([^%.]+)') do
+  if p == 1 then
+  mypattern = lang[langu][get_pattern] or lang['fa'][get_pattern]
+  else
+  mypattern = mypattern[get_pattern]
+  end
+  p = p + 1
+  end
+  local opattern = pattern:gsub('langcmd{[^}]+}',mypattern)
+    local matches = match_pattern(opattern, msg.text)
+    if matches then
+      print("msg matches: ", opattern)
+      if is_plugin_disabled_on_chat(plugin_name, receiver) then
+        return nil
+      end
+      -- Function exists
+      if plugin.run then
+		local success, result = pcall(function()
+		return plugin.run(msg, matches,db:hget(receiver,'lang') or 'fa')
+		end)
+		if not success then
+		print(msg.text or 'nth', result)
+		send_large_msg(receiver, 'This is a bug! Sorry')
+		--save_log('errors', result, msg.from.id or false, msg.to.id or false, msg.text or false)
+        send_large_msg((_config.logchat or ('user#id'.._config.sudo_users[1])),'An #error occurred.\n'..result..'\n'..(msg.text or 'nth'))
+		return
+		else
+		if result then
+		send_large_msg(receiver,result)
+		end
+		end
+      end
+      -- One patterns matches
+      return
+    end
+  end
+  
+  else
+ 
+ 
     local matches = match_pattern(pattern, msg.text)
     if matches then
       print("msg matches: ", pattern)
@@ -174,23 +225,27 @@ function match_plugin(plugin, plugin_name, msg)
       -- Function exists
       if plugin.run then
 		local success, result = pcall(function()
-		return plugin.run(msg, matches)
+		return plugin.run(msg, matches,db:hget(receiver,'lang') or 'fa')
 		end)
 		if not success then
 		print(msg.text or 'nth', result)
-		api.sendReply(msg, 'This is a bug! Sorry', true)
-		save_log('errors', result, msg.from.id or false, msg.to.id or false, msg.text or false)
-        _send_msg(_config.logchat or _config.sudo_users[1],'An #error occurred.\n'..result..'\n'..(msg.text or 'nth'))
+		send_large_msg(receiver, 'This is a bug! Sorry')
+		--save_log('errors', result, msg.from.id or false, msg.to.id or false, msg.text or false)
+        send_large_msg((_config.logchat or ('user#id'.._config.sudo_users[1])),'An #error occurred.\n'..result..'\n'..(msg.text or 'nth'))
 		return
+		else
+		if result then
+		send_large_msg(receiver,result)
 		end
-          if result then
-            send_large_msg(receiver, result)
-          end
+		end
       end
       -- One patterns matches
       return
     end
-  end
+ 
+ 
+end
+end
 end
 -- Save the content of _config to config.lua
 function save_config( )
@@ -199,11 +254,12 @@ function save_config( )
 end
 
 function on_our_id (id)
-  our_id = id
+  if not io.open('./config.lua', "r") then
+   bot_info(load_config,false)
+  end
 end
 
 function on_user_update (user, what)
-  --vardump (user)
 end
 
 function on_chat_update (chat, what)
@@ -221,18 +277,15 @@ end
 function load_plugins()
   for k, v in pairs(_config.enabled_plugins) do
     print("Loading plugin", v)
-
-    local ok, err =  pcall(function()
-      local t = loadfile("plugins/"..v..'.lua')()
-      plugins[v] = t
-    end)
-
-    if not ok then
-      print('\27[31mError loading plugin '..v..'\27[39m')
-      print('\27[31m'..err..'\27[39m')
-         _send_msg(_config.logchat or _config.sudo_users[1],'An #error occurred on loading plugin.\nPlugin: '..v..'\n'..err)
-    end
-
+      local p = dofile("plugins/"..v..'.lua')
+      plugins[v] = p
+  end
+end
+-- Load Langs
+function load_langs()
+  for k, v in pairs(_config.supported_langs) do
+    print("Loading lang", v)
+	lang[v] = dofile('langs/'..v..'.lua')
   end
 end
 -- Call and postpone execution for cron plugins

@@ -24,7 +24,7 @@ function backward_msg_format (msg)
 end
 function get_receiver(msg)
   if msg.to.type == 'user' then
-    return 'user#id'..msg.from.id
+    return 'user#id'..msg.to.id
   elseif msg.to.type == 'chat' then
     return 'chat#id'..msg.to.id
   elseif msg.to.type == 'encr_chat' then
@@ -33,7 +33,19 @@ function get_receiver(msg)
 	return msg.to.peer_id
   end
 end
-
+local function per_away(text)
+	local text = tostring(text):gsub('%%', '£&£')
+	return text
+end
+function glang(text, par1, par2, par3, par4, par5)
+	if par1 then text = text:gsub('&&&1', per_away(par1)) end
+	if par2 then text = text:gsub('&&&2', per_away(par2)) end
+	if par3 then text = text:gsub('&&&3', per_away(par3)) end
+	if par4 then text = text:gsub('&&&4', per_away(par4)) end
+	if par5 then text = text:gsub('&&&5', per_away(par5)) end
+	text = text:gsub('£&£', '%%')
+	return text
+end
 function get_http_file_name(url, headers)
   -- Eg: foo.var
   local file_name = url:match("[^%w]+([%.%w]+)$")
