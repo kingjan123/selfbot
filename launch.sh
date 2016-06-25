@@ -110,9 +110,9 @@ else
     exit 1
   fi
    echo -e "\033[38;5;208m"
-   echo -e "     Self Bot By Jan123 Is Loading...   "
+   echo -e "     Self Bot By Jan123 and Mehran HPR Is Loading...   "
    echo -e "     Source Channel : @SelfBot_Channel   "
-   echo -e "    Developer Channel : @MagicTeam   "
+   echo -e "    Developers Channels : @MagicTeam , @LIONTEAM   "
    echo -e "                                              \033[0;00m"
    echo -e "\e[36m"
    
